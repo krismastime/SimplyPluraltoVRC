@@ -2,13 +2,15 @@ import json, asyncio, time, http.client
 from http.cookiejar import Cookie
 from datetime import timedelta, datetime
 from libraries import keyboard, websockets
-from libraries.vrchatapi import vrchatapi
 from libraries.pythonosc import udp_client
-from vrchatapi.api import authentication_api
-from vrchatapi.exceptions import UnauthorizedException
-from vrchatapi.models.two_factor_auth_code import TwoFactorAuthCode
-from vrchatapi.models.two_factor_email_code import TwoFactorEmailCode
-from vrchatapi.api.users_api import UsersApi
+import libraries.vrchatapi
+from libraries.vrchatapi import exceptions, two_factor_email_code, two_factor_auth_code, users_api, authentication_api
+from libraries.vrchatapi.api_client import ApiClient
+from libraries.vrchatapi.configuration import Configuration
+from libraries.vrchatapi.exceptions import UnauthorizedException
+from libraries.vrchatapi.two_factor_auth_code import TwoFactorAuthCode
+from libraries.vrchatapi.two_factor_email_code import TwoFactorEmailCode
+from libraries.vrchatapi.users_api import UsersApi
 
 # Coded by krismastime (https://github.com/krismastime)
 # Globals and their default values
@@ -84,7 +86,7 @@ def get_options_from_files():
         with open("options.json") as file:
             options = json.load(file)
             global vrcconfig, vrcUserID, readToken
-            vrcconfig = vrchatapi.Configuration(
+            vrcconfig = Configuration(
                 username= options["vrc_user"],
                 password= options["vrc_pass"]
             )
@@ -103,7 +105,7 @@ async def vrcLogIn():
     while True:
         aloop = input("Log into VRChat? y/n\n")
         if "y" in aloop or "Y" in aloop:
-            with vrchatapi.ApiClient(vrcconfig) as api_client:
+            with ApiClient(vrcconfig) as api_client:
                 api_client.user_agent = "SimplyPluralVRC/0.0.1 send issues to kristen.e.lane2004@gmail.com"
                 api_client.rest_client.cookie_jar.set_cookie(
                     make_cookie("auth", auth_cookie))
@@ -126,7 +128,7 @@ async def vrcLogIn():
                     else:
                         print("Exception when calling API: %s\n",e)
                         aloop = ""
-                except vrchatapi.ApiException as e:
+                except exceptions.ApiException as e:
                     print("Exception when calling API: %s\n",e)
                     aloop = ""
 
