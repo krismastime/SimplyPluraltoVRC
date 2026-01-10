@@ -108,10 +108,10 @@ I have tried my best to prevent this from happening, but there may still be some
 # 4. Libraries
 
 Packaged with this application are the following non built-in libraries:
-* [keyboard](https://github.com/boppreh/keyboard) (In full)
-* [pythonosc](https://pypi.org/project/python-osc/) (In full)
-* [websockets](https://pypi.org/project/websockets/) (In full)
-* [vrchatapi-python](https://github.com/vrchatapi/vrchatapi-python) (Partial)
+* [keyboard](https://github.com/boppreh/keyboard)
+* [pythonosc](https://pypi.org/project/python-osc/)
+* [websockets](https://pypi.org/project/websockets/)
+* [vrchatapi-python](https://github.com/vrchatapi/vrchatapi-python)
 
 # 5. Build
 
