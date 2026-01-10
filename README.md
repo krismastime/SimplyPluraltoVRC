@@ -48,7 +48,7 @@ If you want to use the status updating feature, you will need to add details to 
 *vrc_userid* is the ID that VRChat uses to locate your account, to find it, log in to VRChat on a browser, and go to your profile.
 
 The URL should look like this
-https://vrchat.com/home/user/***usr_00aa000a-a0aa-0a00-00aa-aaa000aaa000***
+https://vrchat.com/home/user/usr_00aa000a-a0aa-0a00-00aa-aaa000aaa000
 
 Take the last part of the URL, and replace the text following *vrc_userid*. It should look like this:
 ```json
@@ -83,7 +83,7 @@ This file is loaded on startup, and changes to the file while the programme is r
 Like *vrc_userid* within options.json, the avatar id can be taken from the link of the avatar.
 
 For example, the default avatar has the following URL:
-https://vrchat.com/home/avatar/***avtr_c38a1615-5bf5-42b4-84eb-a8b6c37cbd11***
+https://vrchat.com/home/avatar/avtr_c38a1615-5bf5-42b4-84eb-a8b6c37cbd11
 
 Take the last part of the URL, and replace the text following the member's name. It should look like this:
 ```json
