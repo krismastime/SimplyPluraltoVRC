@@ -1,16 +1,16 @@
 import json, asyncio, time, http.client
-from http.cookiejar import Cookie
+from http.cookiejar import Cookie, CookieJar
 from datetime import timedelta, datetime
 from libraries import keyboard, websockets
 from libraries.pythonosc import udp_client
-import libraries.vrchatapi
-from libraries.vrchatapi import exceptions, two_factor_email_code, two_factor_auth_code, users_api, authentication_api
-from libraries.vrchatapi.api_client import ApiClient
-from libraries.vrchatapi.configuration import Configuration
-from libraries.vrchatapi.exceptions import UnauthorizedException
-from libraries.vrchatapi.two_factor_auth_code import TwoFactorAuthCode
-from libraries.vrchatapi.two_factor_email_code import TwoFactorEmailCode
-from libraries.vrchatapi.users_api import UsersApi
+import vrchatapi
+from vrchatapi.api import authentication_api
+from vrchatapi.api_client import ApiClient
+from vrchatapi.configuration import Configuration
+from vrchatapi.exceptions import UnauthorizedException
+from vrchatapi.models.two_factor_auth_code import TwoFactorAuthCode
+from vrchatapi.models.two_factor_email_code import TwoFactorEmailCode
+from vrchatapi.api.users_api import UsersApi
 
 # Coded by krismastime (https://github.com/krismastime)
 # Globals and their default values
@@ -66,7 +66,7 @@ def get_options_from_files():
             keyboard.add_hotkey(keybinds["time_visibility"],show_time)
             keyboard.add_hotkey(keybinds["time_format"],time_format)
             keyboard.add_hotkey(keybinds["chatbox_visibility"],show_chatbox)
-            keyboard.add_hotkey(keybinds["afk"],show_afk)
+            keyboard.add_hotkey(keybinds["afk_mode"],show_afk)
             keyboard.add_hotkey(keybinds["force_update"],manual_update)
     except:
         print("Generating keybinds.json")
@@ -106,7 +106,7 @@ async def vrcLogIn():
         aloop = input("Log into VRChat? y/n\n")
         if "y" in aloop or "Y" in aloop:
             with ApiClient(vrcconfig) as api_client:
-                api_client.user_agent = "SimplyPluralVRC/0.0.1 send issues to kristen.e.lane2004@gmail.com"
+                api_client.user_agent = "SimplyPluralVRC/1.2.1 kristen.e.lane2004@gmail.com"
                 api_client.rest_client.cookie_jar.set_cookie(
                     make_cookie("auth", auth_cookie))
                 api_client.rest_client.cookie_jar.set_cookie(
@@ -128,18 +128,20 @@ async def vrcLogIn():
                     else:
                         print("Exception when calling API: %s\n",e)
                         aloop = ""
-                except exceptions.ApiException as e:
+                except vrchatapi.exceptions.ApiException as e:
                     print("Exception when calling API: %s\n",e)
                     aloop = ""
-
-                cookie_jar = api_client.rest_client.cookie_jar._cookies["api.vrchat.cloud"]["/"]
-                auths = {"auth":cookie_jar["auth"].value,"twoFactorAuth":cookie_jar["twoFactorAuth"].value}
-                with open("auths.json","w") as file:
-                    json.dump(auths,file)
-                print("Saved cookies to file 'auths.json'")
-                print("Logged in as:", current_user.display_name)
-                global users_api
-                users_api = UsersApi(api_client)
+                try:
+                    cookie_jar = api_client.rest_client.cookie_jar._cookies["api.vrchat.cloud"]["/"]
+                    auths = {"auth":cookie_jar["auth"].value,"twoFactorAuth":cookie_jar["twoFactorAuth"].value}
+                    with open("auths.json","w") as file:
+                        json.dump(auths,file)
+                    print("Saved cookies to auths.json")
+                    print("Logged in as:", current_user.display_name)
+                    global users_api_var
+                    users_api_var = UsersApi(api_client)
+                except Exception as e:
+                    print(e)
                 break            
         elif "n" in aloop or "N" in aloop:
             break
@@ -157,14 +159,18 @@ async def ping(hostname,ws):
 def update_front(message):
     global frontID
     global frontStart
+    global avatars
     frontUpd = json.loads(message)
     frontUpd = frontUpd["results"][0]["content"]
     frontID = frontUpd["member"]
     frontStart = int(frontUpd["startTime"])/1000
     print("Member",memberdict[frontID],"began fronting at",datetime.fromtimestamp(frontStart))
-    avatarID = avatars[memberdict[frontID][0]]
-    client = udp_client.SimpleUDPClient("127.0.0.1",9000)
-    client.send_message("/avatar/change",avatarID)
+    try:
+        avatarID = avatars[memberdict[frontID][0]]
+        client = udp_client.SimpleUDPClient("127.0.0.1",9000)
+        client.send_message("/avatar/change",avatarID)
+    except:
+        print("Unable to change avatar. Ignoring.")
 
 async def listen(hostname,ws):    
     while True:
@@ -174,6 +180,8 @@ async def listen(hostname,ws):
             print("Ping-ponged:",str(int((time.time()-pingtime)*1000))+"ms")
         elif "insert" in message:
             update_front(message)
+        elif "endTime" in message:
+            print("A member stopped fronting.")
         else:
             print(message)
 
@@ -244,14 +252,14 @@ async def chatbox_string():
 async def status_string():
     global aloop
     if "y" in aloop or "Y" in aloop:
-        global users_api
+        global users_api_var
         global current_user
         global frontID
         while True:
             try:
                 request = {'statusDescription':str(memberdict[frontID][0])}
                 print(request)
-                users_api.update_user(user_id=vrcUserID,update_user_request=request)
+                users_api_var.update_user(user_id=vrcUserID,update_user_request=request)
                 await asyncio.sleep(70)
             except Exception as e:
                 print(e)
