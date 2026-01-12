@@ -56,7 +56,7 @@ Take the last part of the URL, and replace the text following *vrc_userid*. It s
 {"vrc_userid": "usr_00aa000a-a0aa-0a00-00aa-aaa000aaa000"} 
 ```
 
-If you are having issues staying connected to SimplyPlural, you can change *attempt_reconnect* to true. If you are able to connect once, the programme will continuously attempt to reconnect to SimplyPlural until the cancel keybind is pressed.
+If you are having issues staying connected to SimplyPlural, you can change *attempt_reconnect* to true. If you are able to connect once, the programme will continuously attempt to reconnect to SimplyPlural until the close keybind is pressed or the programme is closed manually.
 
 ### Keybinds.json
 
@@ -109,8 +109,8 @@ This file is used to customise the output of the chatbox and statuses. There are
 
 There are three custom variables to use in this file:
 * *\#fronter*: The name of the last fronter received from SimplyPlural by the programme.
-* *\#pronouns*: The pronouns of */#fronter*.
-* *\#time*: The time since */#fronter* was detected. Pressing the *time_full* keybind (Default: `Alt + NUMPAD 9`) changes it from digital (00:00:00) to full (0 hrs, 0 mins)
+* *\#pronouns*: The pronouns of *\#fronter*.
+* *\#time*: The time since *\#fronter* was detected. Pressing the *time_full* keybind (Default: `Alt + NUMPAD 9`) changes it from digital (00:00:00) to full (0 hrs, 0 mins)
 
 ### Auths.json
 
