@@ -26,7 +26,7 @@ On first opening, you will see four files be created before the app closes by it
 
 By Default:
 ```json
-{"vrc_user": "Enter VRChat Username", "vrc_pass": "Enter VRChat Password", "vrc_userid": "Enter VRChat User ID", "sp_token": "Enter SimplyPlural Read Token"}
+{"vrc_user":"Enter VRChat Username","vrc_pass":"Enter VRChat Password","vrc_userid":"Enter VRChat User ID","sp_token":"Enter SimplyPlural Read Token","attempt_reconnect":false}
 ```
 
 There are four options within this file:
@@ -34,6 +34,7 @@ There are four options within this file:
 * VRChat Password *vrc_pass*
 * VRChat UserID *vrc_userid*
 * SimplyPlural Token *sp_token* ***(Required)***
+* Attempt Reconnect *attempt_reconnect*
 
 The only one that you will need to look at to use the programme is the SimplyPlural Token. To find this, log in to SimplyPlural and follow the path:
 > Menu -> Settings -> Account -> Tokens
@@ -54,6 +55,8 @@ Take the last part of the URL, and replace the text following *vrc_userid*. It s
 ```json
 {"vrc_userid": "usr_00aa000a-a0aa-0a00-00aa-aaa000aaa000"} 
 ```
+
+If you are having issues staying connected to SimplyPlural, you can change *attempt_reconnect* to true. If you are able to connect once, the programme will continuously attempt to reconnect to SimplyPlural until the cancel keybind is pressed.
 
 ### Keybinds.json
 
@@ -89,6 +92,25 @@ Take the last part of the URL, and replace the text following the member's name.
 ```json
 {"Person's Name!":"avtr_c38a1615-5bf5-42b4-84eb-a8b6c37cbd11"}
 ```
+
+### Chatbox.json
+
+By Default:
+```json
+{"generic":"#fronter\n#pronouns","time_digital":"#fronter\n#pronouns\nFronting #time","time_full":"#fronter\n#pronouns\nFronting #time","afk":"#fronter is\nnot here right now!","status":"#fronter"}
+```
+
+This file is used to customise the output of the chatbox and statuses. There are five things available to change:
+* *generic*: This is what is shown by default when the chatbox is enabled.
+* *afk*: This is what is shown as the first alternate chatbox, by default it shows an afk message.
+* *time_digital*: This is what is shown as the second alternate chatbox, by default it is used to show the time in a digital format.
+* *time_full*: This is what is shown as the third alternate chatbox, by default it is used to show the time in an extended format.
+* *status*: This is what is sent to the VRChat API if you log in. Only #fronter and #pronouns are available to use here.
+
+There are three custom variables to use in this file:
+* *\#fronter*: The name of the last fronter received from SimplyPlural by the programme.
+* *\#pronouns*: The pronouns of */#fronter*.
+* *\#time*: The time since */#fronter* was detected. Pressing the *time_full* keybind (Default: `Alt + NUMPAD 9`) changes it from digital (00:00:00) to full (0 hrs, 0 mins)
 
 ### Auths.json
 

@@ -15,26 +15,18 @@ from vrchatapi.api.users_api import UsersApi
 # Coded by krismastime (https://github.com/krismastime)
 # Globals and their default values
 
-global timeformat
+global timeformat, pingtime, frontID, frontStart, message, chatbox, chatboxVisibility, timerVisibility, afk, aloop, vrc_loggedin
 timeformat = "digital"
-global pingtime
 pingtime = time.time()
-global frontID
 frontID = ""
-global frontStart
 frontStart = 0
-global message
 message = ""
-global chatbox
 chatbox = ""
-global chatboxVisibility
 chatboxVisibility = False
-global timerVisibility
 timerVisibility = False
-global afk
 afk = False
-global aloop
 aloop = ""
+vrc_loggedin = False
 
 def make_cookie(name, value):
     return Cookie(0, name, value,
@@ -80,27 +72,37 @@ def get_options_from_files():
     except:
         print("Generating avatars.json")
         with open("avatars.json","w") as file:
-            json.dump({"name1":"avtr_id-id-id-id-id","name2": "avtr_id-id-id-id-id",},file)
+            json.dump({"name1":"avtr_id-id-id-id-id","name2": "avtr_id-id-id-id-id"},file)
 
     try:
         with open("options.json") as file:
             options = json.load(file)
-            global vrcconfig, vrcUserID, readToken
+            global vrcconfig, vrcUserID, readToken, reconnect
             vrcconfig = Configuration(
                 username= options["vrc_user"],
                 password= options["vrc_pass"]
             )
             vrcUserID = options["vrc_userid"]
             readToken = options["sp_token"]
+            reconnect = options["attempt_reconnect"]
     except:
         print("Generating options.json")
         with open("options.json","w") as file:
-            json.dump({"vrc_user":"Enter VRChat Username","vrc_pass":"Enter VRChat Password","vrc_userid":"Enter VRChat User ID","sp_token":"Enter SimplyPlural Read Token"},file)
+            json.dump({"vrc_user":"Enter VRChat Username","vrc_pass":"Enter VRChat Password","vrc_userid":"Enter VRChat User ID","sp_token":"Enter SimplyPlural Read Token","attempt_reconnect":False},file)
+    
+    try:
+        with open("chatbox.json") as file:
+            global chatboxes
+            chatboxes = json.load(file)
+    except:
+        print("Generating chatbox.json")
+        with open("chatbox.json","w") as file:
+            json.dump({"generic":"#fronter\n#pronouns","time_digital":"#fronter\n#pronouns\nFronting #time","time_full":"#fronter\n#pronouns\nFronting #time","afk":"#fronter is\nnot here right now!","status":"#fronter"},file)
 
     return
 
 async def vrcLogIn():
-    global aloop, current_user, auth_cookie, twofa_cookie
+    global aloop, current_user, auth_cookie, twofa_cookie, vrc_loggedin, users_api_var, vrc_loggedin
     aloop=""
     while True:
         aloop = input("Log into VRChat? y/n\n")
@@ -138,7 +140,7 @@ async def vrcLogIn():
                         json.dump(auths,file)
                     print("Saved cookies to auths.json")
                     print("Logged in as:", current_user.display_name)
-                    global users_api_var
+                    vrc_loggedin = True
                     users_api_var = UsersApi(api_client)
                 except Exception as e:
                     print(e)
@@ -238,26 +240,30 @@ async def chatbox_string():
                 if afk == False:
                     global chatbox
                     chatbox = str(memberdict[frontID][0])+"\n"+str(memberdict[frontID][1])
-                    if timerVisibility == True:
-                        fronttimespan = time_text(frontStart,timeformat)
-                        chatbox = chatbox+str("\nFronting "+fronttimespan)
+                    if timerVisibility == True and timeformat == "digital":
+                        chatbox = chatboxes["time_digital"].replace("#fronter",memberdict[frontID][0]).replace("#pronouns",memberdict[frontID][1]).replace("#time",time_text(frontStart,timeformat))
+                    elif timerVisibility == True and timeformat != "digital":
+                        chatbox = chatboxes["time_full"].replace("#fronter",memberdict[frontID][0]).replace("#pronouns",memberdict[frontID][1]).replace("#time",time_text(frontStart,timeformat))
+                    else:
+                        chatbox = chatboxes["generic"].replace("#fronter",memberdict[frontID][0]).replace("#pronouns",memberdict[frontID][1]).replace("#time",time_text(frontStart,timeformat))
                 else:
-                    chatbox = str(memberdict[frontID][0])+"\nNot here right now!"
+                    chatbox = chatboxes["afk"].replace("#fronter",memberdict[frontID][0]).replace("#pronouns",memberdict[frontID][1]).replace("#time",time_text(frontStart,timeformat))
             else:
                 chatbox = ""
-        except:
-            print("Could not get fronter.")
+        except Exception as e:
+            print("Could not parse chatbox string.")
+            print(e)
         await asyncio.sleep(1)
 
 async def status_string():
     global aloop
     if "y" in aloop or "Y" in aloop:
-        global users_api_var
-        global current_user
-        global frontID
+        global users_api_var, current_user, frontID
         while True:
             try:
-                request = {'statusDescription':str(memberdict[frontID][0])}
+                status = chatboxes["status"]
+                status = status.replace("#fronter",str(memberdict[frontID][0])).replace("#pronouns",str(memberdict[frontID][1]))
+                request = {'statusDescription':status}
                 print(request)
                 users_api_var.update_user(user_id=vrcUserID,update_user_request=request)
                 await asyncio.sleep(70)
@@ -290,61 +296,62 @@ async def get_member_details(systemID,readToken):
     return memberdict
 
 async def auth(hostname,payload,readToken):
-    global systemID
-    global frontID
-    global frontStart
-    global memberdict
-    async with websockets.connect(hostname) as ws:
-        for i in range(1,6):
-            print("Connection attempt",i)
-            try:
-                await ws.send(payload)
-                message = await ws.recv()
-                if "Successful" in message:
-                    message = json.loads(message)
-                    systemID = message["resolvedToken"]["uid"]
-                    print("Socket created with system ID",systemID)
-                    try:
-                        print("Getting current fronter ID...")
-                        frontID, frontStart = await get_fronter(readToken)
-                        print("Successful. Fronter ID:",frontID)
-                        print("Started fronting:",datetime.fromtimestamp(frontStart))
-                        print("Getting system information...")
-                        memberdict = await get_member_details(systemID,readToken)
-                        print("System information gathered:\n"+str(memberdict))
-                        print("Current fronter is:",memberdict[frontID])
-                        print("Updating Avatar...")
+    global systemID, frontID, frontStart, memberdict
+    while reconnect == True:
+        async with websockets.connect(hostname) as ws:
+            for i in range(1,6):
+                print("Connection attempt",i)
+                try:
+                    await ws.send(payload)
+                    message = await ws.recv()
+                    if "Successful" in message:
+                        message = json.loads(message)
+                        systemID = message["resolvedToken"]["uid"]
+                        print("Socket created with system ID",systemID)
                         try:
-                            avatarID = avatars[memberdict[frontID][0]]
-                            client = udp_client.SimpleUDPClient("127.0.0.1",9000)
-                            client.send_message("/avatar/change",avatarID)
-                        except:
-                            print("Unable to update avatar. Ignoring.")
-                        await vrcLogIn()
-                    except Exception as e:
-                        print("Unable to gather required data, closing.")
-                        break
-                    try:
-                        async with asyncio.TaskGroup() as tg:
-                            tg.create_task(listen(hostname,ws))
-                            tg.create_task(ping(hostname,ws))
-                            tg.create_task(chatbox_string())
-                            tg.create_task(connectVRC())
-                            tg.create_task(status_string())
-                            tg.create_task(cancelcheck())
-                    except Exception as e:
-                        print("Finished listening or unable to ping, closing.")
-                        print(e)
-                        break
-                else:
+                            print("Getting current fronter ID...")
+                            frontID, frontStart = await get_fronter(readToken)
+                            print("Successful. Fronter ID:",frontID)
+                            print("Started fronting:",datetime.fromtimestamp(frontStart))
+                            print("Getting system information...")
+                            memberdict = await get_member_details(systemID,readToken)
+                            print("System information gathered:\n"+str(memberdict))
+                            print("Current fronter is:",memberdict[frontID])
+                            print("Updating Avatar...")
+                            try:
+                                avatarID = avatars[memberdict[frontID][0]]
+                                client = udp_client.SimpleUDPClient("127.0.0.1",9000)
+                                client.send_message("/avatar/change",avatarID)
+                            except:
+                                print("Unable to update avatar. Ignoring.")
+                            if vrc_loggedin == False:
+                                await vrcLogIn()
+                        except Exception as e:
+                            print("Unable to gather required data, closing.")
+                            break
+                        try:
+                            async with asyncio.TaskGroup() as tg:
+                                tg.create_task(listen(hostname,ws))
+                                tg.create_task(ping(hostname,ws))
+                                tg.create_task(chatbox_string())
+                                tg.create_task(connectVRC())
+                                tg.create_task(status_string())
+                                tg.create_task(cancelcheck())
+                        except Exception as e:
+                            print("Finished listening or unable to ping.")
+                            if reconnect == False:
+                                break
+                            else:
+                                print("Attempting to reconnect to Simply Plural...")
+                    else:
+                        continue
+                except:
+                    print("Unsuccessful...")
                     continue
-            except:
-                print("Unsuccessful...")
-                continue
-        if i >= 5:
-            print("Unable to connect to SimplyPlural. Is the read token valid?")
-        systemID = ""
-        return systemID
+            if i >= 5:
+                print("Unable to connect to SimplyPlural. Is the read token valid?")
+            systemID = ""
+            return systemID
 
 async def connectVRC():
     global chatboxVisibility
@@ -369,7 +376,8 @@ async def connectVRC():
 
 def cancel():
     print("Cancelling...")
-    global taskcancelled
+    global taskcancelled, reconnect
+    reconnect = False
     taskcancelled = True
 
 def time_format():
