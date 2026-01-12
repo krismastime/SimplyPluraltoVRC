@@ -1,3 +1,4 @@
+#SimplyPlural to VRC by krismastime Version 1.2.2
 import json, asyncio, time, http.client
 from http.cookiejar import Cookie, CookieJar
 from datetime import timedelta, datetime
@@ -297,7 +298,9 @@ async def get_member_details(systemID,readToken):
 
 async def auth(hostname,payload,readToken):
     global systemID, frontID, frontStart, memberdict
-    while reconnect == True:
+    firstpass = True
+    while reconnect == True or firstpass == True:
+        firstpass = False
         async with websockets.connect(hostname) as ws:
             for i in range(1,6):
                 print("Connection attempt",i)
@@ -351,7 +354,7 @@ async def auth(hostname,payload,readToken):
             if i >= 5:
                 print("Unable to connect to SimplyPlural. Is the read token valid?")
             systemID = ""
-            return systemID
+            return
 
 async def connectVRC():
     global chatboxVisibility
@@ -416,7 +419,7 @@ def show_afk():
 async def main(hostname,payload,readToken):
     global taskcancelled
     taskcancelled = False
-    systemID = await auth(hostname,payload,readToken)
+    await auth(hostname,payload,readToken)
     # use get http request here to get first instance of FronterID here, to update information on VRChat.
     # this variable can then be edited later on.
 

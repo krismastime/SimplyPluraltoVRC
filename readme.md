@@ -7,7 +7,7 @@ The application is primarily for use of accessibility, in cases where the accoun
 
 ## !! WARNING !!
 
-Due to VRChat's use of API TOS, the status updates are sent less often than to the chatbox, lowering the frequency of the updates may result in account termination.
+Due to VRChat's use of API TOS, the status updates are sent less often than to the chatbox, increasing the frequency of the updates may result in account termination.
 By using and logging in to VRChat with this application, you acknowledge it is your own responsibility to take care of the safety of your account.
 The requests are also very tempermental, and may not behave correctly, sometimes taking a long time to see the status change.
 
@@ -20,7 +20,7 @@ This application uses [VRChat API for Python](https://github.com/vrchatapi/vrcha
 
 ## 2. Using the application
 
-On first opening, you will see four files be created before the app closes by itself. Now is your chance to edit these files to how you see fit.
+On first opening, you will see five files be created before the app closes by itself. Now is your chance to edit these files to how you see fit.
 
 ### Options.json
 
@@ -34,12 +34,13 @@ There are four options within this file:
 * VRChat Password *vrc_pass*
 * VRChat UserID *vrc_userid*
 * SimplyPlural Token *sp_token* ***(Required)***
-* Attempt Reconnect *attempt_reconnect*
-* Visibility Defaults *visible_on_load*
+* Attempt Reconnect *attempt_reconnect* `default: false`
+* Visibility Defaults *visible_on_load* `default: true`
 
 The only one that you will need to look at to use the programme is the SimplyPlural Token. To find this, log in to SimplyPlural and follow the path:
 > Menu -> Settings -> Account -> Tokens
-This [link](https://app.apparyllis.com/#/Settings/Account/Tokens) should take you there automatically.
+
+[Click here](https://app.apparyllis.com/#/Settings/Account/Tokens) to go there immediately if you are logged in.
 If you don't have a Read Token already, you then need to press "Add Token," and allow the token to be used to read account details.
 Once done, click and hold on the token to copy it to your clipboard, replace the text following *sp_token* and save the file.
 
