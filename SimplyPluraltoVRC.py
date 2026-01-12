@@ -22,7 +22,6 @@ frontID = ""
 frontStart = 0
 message = ""
 chatbox = ""
-chatboxVisibility = False
 timerVisibility = False
 afk = False
 aloop = ""
@@ -47,7 +46,7 @@ def get_options_from_files():
             auth_cookie = rawcookies["auth"]
             twofa_cookie = rawcookies["twoFactorAuth"]
     except:
-        print("Generating auth.json")
+        print("Unable to parse, generating auth.json")
         with open("auths.json","w") as file:
             json.dump({"auth":"unknown","twoFactorAuth":"unknown"},file)
 
@@ -61,7 +60,7 @@ def get_options_from_files():
             keyboard.add_hotkey(keybinds["afk_mode"],show_afk)
             keyboard.add_hotkey(keybinds["force_update"],manual_update)
     except:
-        print("Generating keybinds.json")
+        print("Unable to parse, generating keybinds.json")
         with open("keybinds.json","w") as file:
             json.dump({"cancel":"ctrl+page down","time_visibility":"ctrl+page up","time_format":"alt+page up","chatbox_visibility":"ctrl+home","afk_mode":"ctrl+up","force_update":"ctrl+u"},file)
 
@@ -70,14 +69,14 @@ def get_options_from_files():
             global avatars
             avatars = json.load(file)
     except:
-        print("Generating avatars.json")
+        print("Unable to parse, generating avatars.json")
         with open("avatars.json","w") as file:
             json.dump({"name1":"avtr_id-id-id-id-id","name2": "avtr_id-id-id-id-id"},file)
 
     try:
         with open("options.json") as file:
             options = json.load(file)
-            global vrcconfig, vrcUserID, readToken, reconnect
+            global vrcconfig, vrcUserID, readToken, reconnect, chatboxVisibility
             vrcconfig = Configuration(
                 username= options["vrc_user"],
                 password= options["vrc_pass"]
@@ -85,17 +84,18 @@ def get_options_from_files():
             vrcUserID = options["vrc_userid"]
             readToken = options["sp_token"]
             reconnect = options["attempt_reconnect"]
+            chatboxVisibility = options["visible_on_load"]
     except:
-        print("Generating options.json")
+        print("Unable to parse, generating options.json")
         with open("options.json","w") as file:
-            json.dump({"vrc_user":"Enter VRChat Username","vrc_pass":"Enter VRChat Password","vrc_userid":"Enter VRChat User ID","sp_token":"Enter SimplyPlural Read Token","attempt_reconnect":False},file)
+            json.dump({"vrc_user":"Enter VRChat Username","vrc_pass":"Enter VRChat Password","vrc_userid":"Enter VRChat User ID","sp_token":"Enter SimplyPlural Read Token","attempt_reconnect":False,"visible_on_load":True},file)
     
     try:
         with open("chatbox.json") as file:
             global chatboxes
             chatboxes = json.load(file)
     except:
-        print("Generating chatbox.json")
+        print("Unable to parse, generating chatbox.json")
         with open("chatbox.json","w") as file:
             json.dump({"generic":"#fronter\n#pronouns","time_digital":"#fronter\n#pronouns\nFronting #time","time_full":"#fronter\n#pronouns\nFronting #time","afk":"#fronter is\nnot here right now!","status":"#fronter"},file)
 

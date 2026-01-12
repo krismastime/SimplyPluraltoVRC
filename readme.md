@@ -26,7 +26,7 @@ On first opening, you will see four files be created before the app closes by it
 
 By Default:
 ```json
-{"vrc_user":"Enter VRChat Username","vrc_pass":"Enter VRChat Password","vrc_userid":"Enter VRChat User ID","sp_token":"Enter SimplyPlural Read Token","attempt_reconnect":false}
+{"vrc_user":"Enter VRChat Username","vrc_pass":"Enter VRChat Password","vrc_userid":"Enter VRChat User ID","sp_token":"Enter SimplyPlural Read Token","attempt_reconnect":false,"visible_on_load":true}
 ```
 
 There are four options within this file:
@@ -35,6 +35,7 @@ There are four options within this file:
 * VRChat UserID *vrc_userid*
 * SimplyPlural Token *sp_token* ***(Required)***
 * Attempt Reconnect *attempt_reconnect*
+* Visibility Defaults *visible_on_load*
 
 The only one that you will need to look at to use the programme is the SimplyPlural Token. To find this, log in to SimplyPlural and follow the path:
 > Menu -> Settings -> Account -> Tokens
@@ -57,6 +58,8 @@ Take the last part of the URL, and replace the text following *vrc_userid*. It s
 ```
 
 If you are having issues staying connected to SimplyPlural, you can change *attempt_reconnect* to true. If you are able to connect once, the programme will continuously attempt to reconnect to SimplyPlural until the close keybind is pressed or the programme is closed manually.
+
+Set *visible_on_load* to false if you do not want the programme to update the chatbox immediately.
 
 ### Keybinds.json
 
