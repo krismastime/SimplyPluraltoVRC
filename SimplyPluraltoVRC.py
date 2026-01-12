@@ -349,7 +349,8 @@ async def auth(hostname,payload,readToken):
                     else:
                         continue
                 except:
-                    print("Unsuccessful...")
+                    print("Unsuccessful, retrying in",i*2,"seconds...")
+                    await asyncio.sleep(i*2)
                     continue
             if i >= 5:
                 print("Unable to connect to SimplyPlural. Is the read token valid?")
