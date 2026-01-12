@@ -26,7 +26,14 @@ On first opening, you will see five files be created before the app closes by it
 
 By Default:
 ```json
-{"vrc_user":"Enter VRChat Username","vrc_pass":"Enter VRChat Password","vrc_userid":"Enter VRChat User ID","sp_token":"Enter SimplyPlural Read Token","attempt_reconnect":false,"visible_on_load":true}
+{
+    "vrc_user":"Enter VRChat Username",
+    "vrc_pass":"Enter VRChat Password",
+    "vrc_userid":"Enter VRChat User ID",
+    "sp_token":"Enter SimplyPlural Read Token",
+    "attempt_reconnect":false,
+    "visible_on_load":true
+}
 ```
 
 There are four options within this file:
@@ -55,7 +62,9 @@ https://vrchat.com/home/user/usr_00aa000a-a0aa-0a00-00aa-aaa000aaa000
 
 Take the last part of the URL, and replace the text following *vrc_userid*. It should look like this:
 ```json
-{"vrc_userid": "usr_00aa000a-a0aa-0a00-00aa-aaa000aaa000"} 
+{
+    "vrc_userid": "usr_00aa000a-a0aa-0a00-00aa-aaa000aaa000"
+} 
 ```
 
 If you are having issues staying connected to SimplyPlural, you can change *attempt_reconnect* to true. If you are able to connect once, the programme will continuously attempt to reconnect to SimplyPlural until the close keybind is pressed or the programme is closed manually.
@@ -66,7 +75,14 @@ Set *visible_on_load* to false if you do not want the programme to update the ch
 
 By Default:
 ```json
-{"cancel": "ctrl+page down", "time_visibility": "ctrl+page up", "time_format": "alt+page up", "chatbox_visibility": "ctrl+home", "afk_mode": "ctrl+up", "force_update": "ctrl+u"}
+{
+    "cancel": "ctrl+page down",
+    "time_visibility": "ctrl+page up",
+    "time_format": "alt+page up",
+    "chatbox_visibility": "ctrl+home",
+    "afk_mode": "ctrl+up",
+    "force_update": "ctrl+u"
+}
 ```
 
 The keybinds are implemented using the [keyboard](https://github.com/boppreh/keyboard) python library. Because of this, NUMPAD keys are represented by their actions when NumLock is not toggled. The default keybinds are:
@@ -81,7 +97,10 @@ The keybinds are implemented using the [keyboard](https://github.com/boppreh/key
 
 By Default:
 ```json
-{"name1": "avtr_id-id-id-id-id", "name2": "avtr_id-id-id-id-id"}
+{
+    "name1": "avtr_id-id-id-id-id",
+    "name2": "avtr_id-id-id-id-id"
+}
 ```
 
 This file is used to change avatars when the programme starts and when an update is detected from SimplyPlural.
@@ -101,7 +120,13 @@ Take the last part of the URL, and replace the text following the member's name.
 
 By Default:
 ```json
-{"generic":"#fronter\n#pronouns","time_digital":"#fronter\n#pronouns\nFronting #time","time_full":"#fronter\n#pronouns\nFronting #time","afk":"#fronter is\nnot here right now!","status":"#fronter"}
+{
+    "generic":"#fronter\n#pronouns",
+    "time_digital":"#fronter\n#pronouns\nFronting #time",
+    "time_full":"#fronter\n#pronouns\nFronting #time",
+    "afk":"#fronter is\nnot here right now!",
+    "status":"#fronter"
+}
 ```
 
 This file is used to customise the output of the chatbox and statuses. There are five things available to change:
