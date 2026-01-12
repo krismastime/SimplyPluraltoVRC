@@ -63,7 +63,7 @@ def get_options_from_files():
     except:
         print("Unable to parse, generating keybinds.json")
         with open("keybinds.json","w") as file:
-            json.dump({"cancel":"ctrl+page down","time_visibility":"ctrl+page up","time_format":"alt+page up","chatbox_visibility":"ctrl+home","afk_mode":"ctrl+up","force_update":"ctrl+u"},file)
+            json.dump({"cancel":"ctrl+page down","time_visibility":"ctrl+page up","time_format":"alt+page up","chatbox_visibility":"ctrl+home","afk_mode":"ctrl+up","force_update":"ctrl+u"},file, indent=4)
 
     try:
         with open("avatars.json") as file:
@@ -72,7 +72,7 @@ def get_options_from_files():
     except:
         print("Unable to parse, generating avatars.json")
         with open("avatars.json","w") as file:
-            json.dump({"name1":"avtr_id-id-id-id-id","name2": "avtr_id-id-id-id-id"},file)
+            json.dump({"name1":"avtr_id-id-id-id-id","name2": "avtr_id-id-id-id-id"},file, indent=4)
 
     try:
         with open("options.json") as file:
@@ -89,7 +89,7 @@ def get_options_from_files():
     except:
         print("Unable to parse, generating options.json")
         with open("options.json","w") as file:
-            json.dump({"vrc_user":"Enter VRChat Username","vrc_pass":"Enter VRChat Password","vrc_userid":"Enter VRChat User ID","sp_token":"Enter SimplyPlural Read Token","attempt_reconnect":False,"visible_on_load":True},file)
+            json.dump({"vrc_user":"Enter VRChat Username","vrc_pass":"Enter VRChat Password","vrc_userid":"Enter VRChat User ID","sp_token":"Enter SimplyPlural Read Token","attempt_reconnect":False,"visible_on_load":True},file, indent=4)
     
     try:
         with open("chatbox.json") as file:
@@ -98,7 +98,7 @@ def get_options_from_files():
     except:
         print("Unable to parse, generating chatbox.json")
         with open("chatbox.json","w") as file:
-            json.dump({"generic":"#fronter\n#pronouns","time_digital":"#fronter\n#pronouns\nFronting #time","time_full":"#fronter\n#pronouns\nFronting #time","afk":"#fronter is\nnot here right now!","status":"#fronter"},file)
+            json.dump({"generic":"#fronter\n#pronouns","time_digital":"#fronter\n#pronouns\nFronting #time","time_full":"#fronter\n#pronouns\nFronting #time","afk":"#fronter is\nnot here right now!","status":"#fronter"},file, indent=4)
 
     return
 
