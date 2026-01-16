@@ -29,21 +29,23 @@ aloop = ""
 vrc_loggedin = False
 
 class updateOSC:
+    """
+    A class to update VRChat information through the OSC (By default, port 9000)
+    """
     ip = "127.0.0.1"
     port = 9000
+    client = udp_client.SimpleUDPClient(ip,port)
 
-    async def update_avatar(ip,port):
+    async def update_avatar(client):
         try:
             print("Attempting to update avatar...")
             avatarID = avatars[memberdict[frontID][0]]
-            client = udp_client.SimpleUDPClient(ip,port)
             client.send_message("/avatar/change",avatarID)
         except:
             print("Unable to update avatar, ignoring.")
     
-    async def update_chatbox(ip,port):
+    async def update_chatbox(client):
         global chatboxVisibility, chatbox
-        client = udp_client.SimpleUDPClient(ip,port)
         while True:
             if chatboxVisibility == True:
                 client.send_message("/chatbox/input",[chatbox,True,False])
@@ -54,44 +56,87 @@ class updateOSC:
                     await asyncio.sleep(1)
             await asyncio.sleep(2)
 
+class read_options_from_ui():
+
+    default_settings = {
+        "sp_token":"SimplyPlural Read Token",
+        "vrc_info":{
+            "vrc_user":"VRChat Username",
+            "vrc_pass":"VRChat Password",
+            "vrc_userid":"VRChat User ID",
+        },
+        "chatbox":{
+            "generic":"#fronter\n#pronouns",
+            "time_digital":"#fronter\n#pronouns\nFronting #time",
+            "time_full":"#fronter\n#pronouns\nFronting #time",
+            "afk":"#fronter is\nnot here right now!",
+            "status":"#fronter"
+        },
+        "keybinds":{
+            "cancel":"ctrl+page down",
+            "time_visibility":"ctrl+page up",
+            "time_format":"alt+page up",
+            "chatbox_visibility":"ctrl+home",
+            "afk_mode":"ctrl+up",
+            "force_update":"ctrl+u"
+        },
+        "avatars":{
+            "name1":"avtr_id-id-id-id-id",
+            "name2": "avtr_id-id-id-id-id"
+        },
+        "auths":{
+            "auth":"unknown",
+            "twoFactorAuth":"unknown"
+        }
+    }
+
+    def get_options(default_settings,filename="settings.json"):
+        try:
+            with open(filename) as file:
+                settings = json.load(file)
+        except:
+            error = "Unable to parse, generating settings.json"
+            with open(filename,"w") as file:
+                json.dump(default_settings,indent=4)
+
 class read_options():
 
-    def get_auths():
+    def get_auths(filename="auths.json"):
         try:
-            with open("settings/auths.json") as file:
+            with open(filename) as file:
                 rawcookies = json.load(file)
                 global auth_cookie, twofa_cookie
                 auth_cookie = rawcookies["auth"]
                 twofa_cookie = rawcookies["twoFactorAuth"]
         except:
             print("Unable to parse, generating auth.json")
-            with open("auths.json","w") as file:
+            with open(filename,"w") as file:
                 json.dump({"auth":"unknown","twoFactorAuth":"unknown"},file)
     
-    def get_keybinds():
+    def get_keybinds(filename="keybinds.json"):
         try:
-            with open("keybinds.json") as file:
+            with open(filename) as file:
                 keybinds = json.load(file)
                 set_keybinds.update_keybinds(keybinds)
 
         except:
             print("Unable to parse, generating keybinds.json")
-            with open("keybinds.json","w") as file:
+            with open(filename,"w") as file:
                 json.dump({"cancel":"ctrl+page down","time_visibility":"ctrl+page up","time_format":"alt+page up","chatbox_visibility":"ctrl+home","afk_mode":"ctrl+up","force_update":"ctrl+u"},file, indent=4)
 
-    def get_avatars():
+    def get_avatars(filename="avatars.json"):
         try:
-            with open("avatars.json") as file:
+            with open(filename) as file:
                 global avatars
                 avatars = json.load(file)
         except:
             print("Unable to parse, generating avatars.json")
-            with open("avatars.json","w") as file:
+            with open(filename,"w") as file:
                 json.dump({"name1":"avtr_id-id-id-id-id","name2": "avtr_id-id-id-id-id"},file, indent=4)
 
-    def get_options():
+    def get_options(filename="options.json"):
         try:
-            with open("options.json") as file:
+            with open(filename) as file:
                 options = json.load(file)
                 global vrcconfig, vrcUserID, readToken, reconnect, chatboxVisibility
                 vrcconfig = Configuration(
@@ -104,17 +149,17 @@ class read_options():
                 chatboxVisibility = options["visible_on_load"]
         except:
             print("Unable to parse, generating options.json")
-            with open("options.json","w") as file:
+            with open(filename,"w") as file:
                 json.dump({"vrc_user":"Enter VRChat Username","vrc_pass":"Enter VRChat Password","vrc_userid":"Enter VRChat User ID","sp_token":"Enter SimplyPlural Read Token","attempt_reconnect":False,"visible_on_load":True},file, indent=4)
 
-    def get_chatbox():
+    def get_chatbox(filename="chatbox.json"):
         try:
-            with open("chatbox.json") as file:
+            with open(filename) as file:
                 global chatboxes
                 chatboxes = json.load(file)
         except:
             print("Unable to parse, generating chatbox.json")
-            with open("chatbox.json","w") as file:
+            with open(filename,"w") as file:
                 json.dump({"generic":"#fronter\n#pronouns","time_digital":"#fronter\n#pronouns\nFronting #time","time_full":"#fronter\n#pronouns\nFronting #time","afk":"#fronter is\nnot here right now!","status":"#fronter"},file, indent=4)
 
     def get_all():
@@ -440,67 +485,6 @@ async def auth(hostname,payload,readToken):
                 print("Disconnected. Read exception for details:\n"+str(e))
                 return
 
-async def auth2(hostname,payload,readToken):
-    global systemID, frontID, frontStart, memberdict
-    firstpass = True
-    if vrc_loggedin == False:
-        await vrcLogIn()
-    while reconnect == True or firstpass == True:
-        firstpass = False
-        async with websockets.connect(hostname) as ws:
-            for i in range(1,6):
-                print("Connection attempt",i)
-                try:
-                    await ws.send(payload)
-                    message = await ws.recv()
-                    if "Successful" in message:
-                        message = json.loads(message)
-                        systemID = message["resolvedToken"]["uid"]
-                        print("Socket created with system ID",systemID)
-                        try:
-                            print("Getting current fronter ID...")
-                            frontID, frontStart = await get_fronter(readToken)
-                            print("Successful. Fronter ID:",frontID)
-                            print("Started fronting:",datetime.fromtimestamp(frontStart))
-                            print("Getting system information...")
-                            memberdict = await get_member_details(systemID,readToken)
-                            print("System information gathered:\n"+str(memberdict))
-                            print("Current fronter is:",memberdict[frontID])
-                            print("Updating Avatar...")
-                            try:
-                                avatarID = avatars[memberdict[frontID][0]]
-                                client = udp_client.SimpleUDPClient("127.0.0.1",9000)
-                                client.send_message("/avatar/change",avatarID)
-                            except:
-                                print("Unable to update avatar. Ignoring.")
-                        except Exception as e:
-                            print("Unable to gather required data, closing.")
-                            break
-                        try:
-                            async with asyncio.TaskGroup() as tg:
-                                tg.create_task(listen(hostname,ws))
-                                tg.create_task(ping(hostname,ws))
-                                tg.create_task(chatbox_string())
-                                tg.create_task(updateOSC.update_chatbox())
-                                tg.create_task(status_string())
-                                tg.create_task(cancelcheck())
-                        except Exception as e:
-                            print("Finished listening or unable to ping.")
-                            if reconnect == False:
-                                break
-                            else:
-                                print("Attempting to reconnect to Simply Plural...")
-                    else:
-                        continue
-                except:
-                    print("Unsuccessful, retrying in",i*2,"seconds...")
-                    await asyncio.sleep(i*2)
-                    continue
-            if i >= 5:
-                print("Unable to connect to SimplyPlural. Is the read token valid?")
-            systemID = ""
-            return
-
 async def main():
     global taskcancelled
     taskcancelled = False
@@ -511,10 +495,9 @@ async def main():
     # use get http request here to get first instance of FronterID here, to update information on VRChat.
     # this variable can then be edited later on.
 
-try:
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(main())
-except:
-    print("Unable to obtain Simply Plural read token from options.json")
-
-input("Press enter to close.\n")
+def run():
+    try:
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(main())
+    except:
+        print("Unable to obtain Simply Plural read token from options.json")
