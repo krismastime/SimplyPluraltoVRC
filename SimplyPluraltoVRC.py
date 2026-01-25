@@ -19,8 +19,8 @@ from vrchatapi.api.users_api import UsersApi
 global timeformat, pingtime, frontID, frontStart, message, chatbox, chatboxVisibility, timerVisibility, afk, aloop, vrc_loggedin, ip, port, client, taskcancelled
 timeformat = "digital"
 pingtime = time.time()
-frontID = ""
-frontStart = 0
+frontID = []
+frontStart = []
 message = ""
 chatbox = ""
 timerVisibility = False
@@ -32,12 +32,12 @@ port = 9000
 client = udp_client.SimpleUDPClient(ip,port)
 taskcancelled = False
 
-async def update_avatar():
+def update_avatar():
     try:
         print("Attempting to update avatar...")
-        avatarID = avatars[memberdict[frontID][0]]
+        avatarID = avatars[memberdict[frontID[-1]][0]]
         client.send_message("/avatar/change",avatarID)
-    except:
+    except Exception as e:
         print("Unable to update avatar, ignoring.")
 
 async def update_chatbox():
@@ -363,16 +363,29 @@ async def ping(hostname,ws):
         await ws.send("ping")
         await asyncio.sleep(10)
 
-def update_front(message):
-    global frontID
-    global frontStart
-    global avatars
-    frontUpd = json.loads(message)
-    frontUpd = frontUpd["results"][0]["content"]
-    frontID = frontUpd["member"]
-    frontStart = int(frontUpd["startTime"])/1000
-    print("Member",memberdict[frontID],"began fronting at",datetime.fromtimestamp(frontStart))
-    update_avatar()
+def add_front(message):
+    global frontID, frontStart, avatars
+    try:
+        frontUpd = json.loads(message)
+        frontUpd = frontUpd["results"][0]["content"]
+        frontID.append(frontUpd["member"])
+        frontStart.append(int(frontUpd["startTime"])/1000)
+        print("Member",memberdict[frontID[-1]],"began fronting at",datetime.fromtimestamp(frontStart[-1]))
+        update_avatar()
+    except Exception as e:
+        print(e)
+
+def remove_front(message):
+    global frontID, frontStart
+    try:
+        frontUpd = json.loads(message)
+        frontUpd = frontUpd["results"][0]["content"]
+        list_index = frontID.index(frontUpd["member"])
+        print("Member",memberdict[frontID[list_index]],"stopped fronting at",datetime.fromtimestamp(int(frontUpd["endTime"])/1000))
+        frontID.pop(list_index)
+        frontStart.pop(list_index)
+    except Exception as e:
+        print(e)
 
 async def listen(hostname,ws):    
     while True:
@@ -381,18 +394,19 @@ async def listen(hostname,ws):
         if message == "pong":
             print("Ping-ponged:",str(int((time.time()-pingtime)*1000))+"ms")
         elif "insert" in message:
-            update_front(message)
+            add_front(message)
         elif "endTime" in message:
-            print("A member stopped fronting.")
+            remove_front(message)
         else:
             print(message)
 
 def manual_update():
     frontID, frontStart = asyncio.run(get_fronter(readToken))
-    messageManual = {"results":[{"content":{"member":frontID,"startTime":frontStart*1000}}]}
-    messageManual = json.dumps(messageManual)
-    print(messageManual)
-    update_front(messageManual)
+    for i in len(frontID):
+        messageManual = {"results":[{"content":{"member":frontID[i],"startTime":frontStart[i]*1000}}]}
+        messageManual = json.dumps(messageManual)
+        print(messageManual)
+        add_front(messageManual)
 
 async def cancelcheck():
     while True:
@@ -401,7 +415,7 @@ async def cancelcheck():
         await asyncio.sleep(1)
 
 async def get_fronter(readToken):
-    global frontStart
+    global frontID, frontStart
     conn = http.client.HTTPSConnection("api.apparyllis.com")
     payload = ''
     headers = {
@@ -409,10 +423,12 @@ async def get_fronter(readToken):
     }
     conn.request("GET", "/v1/fronters/", payload, headers)
     res = conn.getresponse()
-    frontID = res.read()[1:-1]
-    frontID = json.loads(frontID.decode("utf-8"))
-    frontStart = float(frontID["content"]["startTime"])/1000
-    frontID = frontID["content"]["member"]
+    res = res.read()[1:-1]
+    res = json.loads(res.decode("utf-8"))
+    for i in res:
+        if i == "content":
+            frontStart.append(float(res[i]["startTime"])/1000)
+            frontID.append(res[i]["member"])
     return frontID, frontStart
 
 def as_list(pairs):
@@ -433,21 +449,34 @@ def time_text(whenfrom,timeformat):
             fronttimespan = str(timespan//3600)+" hrs "+str((timespan//60)-((timespan//3600)*60))+" mins"
     return str(fronttimespan)
 
+def chat_format(i,fronters,pronouns):
+    return i.replace("#fronter",fronters).replace("#pronouns",pronouns).replace("#time",time_text(max(frontStart),timeformat))
+
 async def chatbox_string():
+    global chatbox
     while True:
+        fronters, pronouns = "", ""
+        try:
+            if len(frontID) == 1:
+                fronters = str(memberdict[frontID[0]][0])
+                pronouns = str(memberdict[frontID[0]][1])         
+            else:
+                for i in frontID:
+                    fronters = str(fronters+memberdict[i][0]+"|") 
+                    pronouns = str(pronouns+memberdict[i][1]+"|")
+        except:
+            print("Could not parse get fronters or pronouns.")
         try:
             if chatboxVisibility == True:
                 if afk == False:
-                    global chatbox
-                    chatbox = str(memberdict[frontID][0])+"\n"+str(memberdict[frontID][1])
                     if timerVisibility == True and timeformat == "digital":
-                        chatbox = chatboxes["time_digital"].replace("#fronter",memberdict[frontID][0]).replace("#pronouns",memberdict[frontID][1]).replace("#time",time_text(frontStart,timeformat))
+                        chatbox = chat_format(chatboxes["time_digital"],fronters,pronouns)
                     elif timerVisibility == True and timeformat != "digital":
-                        chatbox = chatboxes["time_full"].replace("#fronter",memberdict[frontID][0]).replace("#pronouns",memberdict[frontID][1]).replace("#time",time_text(frontStart,timeformat))
+                        chatbox = chat_format(chatboxes["time_full"],fronters,pronouns)
                     else:
-                        chatbox = chatboxes["generic"].replace("#fronter",memberdict[frontID][0]).replace("#pronouns",memberdict[frontID][1]).replace("#time",time_text(frontStart,timeformat))
+                        chatbox = chat_format(chatboxes["generic"],fronters,pronouns)
                 else:
-                    chatbox = chatboxes["afk"].replace("#fronter",memberdict[frontID][0]).replace("#pronouns",memberdict[frontID][1]).replace("#time",time_text(frontStart,timeformat))
+                    chatbox = chat_format(chatboxes["afk"],fronters,pronouns)
             else:
                 chatbox = ""
         except Exception as e:
@@ -538,7 +567,7 @@ async def auth(hostname,payload,readToken):
     global systemID,frontID,frontStart,memberdict
     ws, systemID = await create_websocket(hostname,payload)
     frontID, frontStart, memberdict = await gather_member_info()
-    update_avatar
+    update_avatar()
     while True:
         try:
             async with asyncio.TaskGroup() as tg:
