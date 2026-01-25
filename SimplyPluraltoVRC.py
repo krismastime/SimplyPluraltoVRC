@@ -16,7 +16,7 @@ from vrchatapi.api.users_api import UsersApi
 # Coded by krismastime (https://github.com/krismastime)
 # Globals and their default values
 
-global timeformat, pingtime, frontID, frontStart, message, chatbox, chatboxVisibility, timerVisibility, afk, aloop, vrc_loggedin
+global timeformat, pingtime, frontID, frontStart, message, chatbox, chatboxVisibility, timerVisibility, afk, aloop, vrc_loggedin, ip, port, client, taskcancelled
 timeformat = "digital"
 pingtime = time.time()
 frontID = ""
@@ -27,39 +27,37 @@ timerVisibility = False
 afk = False
 aloop = ""
 vrc_loggedin = False
+ip = "127.0.0.1"
+port = 9000
+client = udp_client.SimpleUDPClient(ip,port)
+taskcancelled = False
 
-class updateOSC:
-    """
-    A class to update VRChat information through the OSC (By default, port 9000)
-    """
-    ip = "127.0.0.1"
-    port = 9000
-    client = udp_client.SimpleUDPClient(ip,port)
+async def update_avatar():
+    try:
+        print("Attempting to update avatar...")
+        avatarID = avatars[memberdict[frontID][0]]
+        client.send_message("/avatar/change",avatarID)
+    except:
+        print("Unable to update avatar, ignoring.")
 
-    async def update_avatar(client):
-        try:
-            print("Attempting to update avatar...")
-            avatarID = avatars[memberdict[frontID][0]]
-            client.send_message("/avatar/change",avatarID)
-        except:
-            print("Unable to update avatar, ignoring.")
-    
-    async def update_chatbox(client):
-        global chatboxVisibility, chatbox
-        while True:
-            if chatboxVisibility == True:
-                client.send_message("/chatbox/input",[chatbox,True,False])
-            else:
-                chatbox = ""
-                client.send_message("/chatbox/input",[chatbox,True,False])
-                while chatboxVisibility == False:
-                    await asyncio.sleep(1)
-            await asyncio.sleep(2)
+async def update_chatbox():
+    global chatboxVisibility, chatbox
+    while True:
+        if chatboxVisibility == True:
+            client.send_message("/chatbox/input",[chatbox,True,False])
+        else:
+            chatbox = ""
+            client.send_message("/chatbox/input",[chatbox,True,False])
+            while chatboxVisibility == False:
+                await asyncio.sleep(1)
+        await asyncio.sleep(2)
 
-class read_options_from_ui():
+class read_options_from_ui:
 
     default_settings = {
         "sp_token":"SimplyPlural Read Token",
+        "attempt_reconnect":True,
+        "visible_on_load":True,
         "vrc_info":{
             "vrc_user":"VRChat Username",
             "vrc_pass":"VRChat Password",
@@ -90,16 +88,94 @@ class read_options_from_ui():
         }
     }
 
-    def get_options(default_settings,filename="settings.json"):
+    def get_options(filename="settings.json"):
+        defaults = read_options_from_ui.default_settings
+        noErrors = 0
         try:
             with open(filename) as file:
                 settings = json.load(file)
+
+            try:
+                chatboxes = settings["chatbox"]
+            except:
+                noErrors += 1
+                settings["chatbox"] = defaults["chatbox"]
+
+            try:
+                auth_cookie = settings["auths"]["auth"]
+                twofa_cookie = settings["auths"]["twoFactorAuth"]
+            except:
+                noErrors += 1
+                settings["auths"] = defaults["auths"]
+
+            try:
+                keybinds = settings["keybinds"]
+                set_keybinds.update_keybinds(keybinds)
+            except:
+                noErrors += 1
+                settings["keybinds"] = defaults["keybinds"]
+
+            try:
+                avatars = settings["avatars"]
+            except:        
+                noErrors += 1
+                settings["avatars"] = defaults["avatars"]
+
+            try:
+                vrcconfig = Configuration(
+                    username= settings["vrc_info"]["vrc_user"],
+                    password= settings["vrc_info"]["vrc_pass"]
+                )
+                vrcUserID = settings["vrc_info"]["vrc_userid"]
+            except:
+                noErrors += 1
+                settings["vrc_info"] = defaults["vrc_info"]
+            
+            try:
+                readToken = settings["sp_token"]
+            except:
+                noErrors += 1
+                settings["sp_token"] = defaults["sp_token"]
+
+            try:
+                reconnect = settings["attempt_reconnect"]
+                if reconnect != True and reconnect != False:
+                    print("Error: Attempt_reconnect unable to parse.")
+                    settings["attempt_reconnect"] = defaults["attempt_reconnect"]
+                    noErrors += 1
+            except:
+                settings["attempt_reconnect"] = defaults["attempt_reconnect"]
+                noErrors += 1
+
+            try:
+                chatboxVisibility = settings["visible_on_load"]
+                if chatboxVisibility != True and chatboxVisibility != False:
+                    print("Error: Visible on Load unable to parse.")
+                    settings["visible_on_load"] = defaults["visible_on_load"]
+                    noErrors += 1
+            except:
+                settings["visible_on_load"] = defaults["visible_on_load"]
+                noErrors += 1
+
+            if noErrors > 0:
+                with open(filename,"w") as file:
+                    json.dump(settings,file,indent=4)
+                if noErrors == 1:
+                    error = str("Fixing "+str(noErrors)+" error in settings.json")
+                else:
+                    error = str("Fixing "+str(noErrors)+" errors in settings.json")
+                return error, settings
+            else:
+                with open(filename,"w") as file:
+                    json.dump(settings,file,indent=4)
+                return "Reloaded!", settings
         except:
             error = "Unable to parse, generating settings.json"
             with open(filename,"w") as file:
-                json.dump(default_settings,indent=4)
+                json.dump(defaults,file,indent=4)
+            return error, "X"
 
-class read_options():
+class read_options:
 
     def get_auths(filename="auths.json"):
         try:
@@ -296,7 +372,7 @@ def update_front(message):
     frontID = frontUpd["member"]
     frontStart = int(frontUpd["startTime"])/1000
     print("Member",memberdict[frontID],"began fronting at",datetime.fromtimestamp(frontStart))
-    updateOSC.update_avatar()
+    update_avatar()
 
 async def listen(hostname,ws):    
     while True:
@@ -460,18 +536,16 @@ async def gather_member_info():
 
 async def auth(hostname,payload,readToken):
     global systemID,frontID,frontStart,memberdict
-    if vrc_loggedin == False:
-        await vrcLogIn()
-    ws, systemID = create_websocket(hostname,payload)
-    frontID, frontStart, memberdict = gather_member_info()
-    updateOSC.update_avatar()
+    ws, systemID = await create_websocket(hostname,payload)
+    frontID, frontStart, memberdict = await gather_member_info()
+    update_avatar
     while True:
         try:
             async with asyncio.TaskGroup() as tg:
                 tg.create_task(listen(hostname,ws))
                 tg.create_task(ping(hostname,ws))
                 tg.create_task(chatbox_string())
-                tg.create_task(updateOSC.update_chatbox())
+                tg.create_task(update_chatbox())
                 tg.create_task(status_string())
                 tg.create_task(cancelcheck())
         except Exception as e:
@@ -488,9 +562,11 @@ async def auth(hostname,payload,readToken):
 async def main():
     global taskcancelled
     taskcancelled = False
-    await read_options.get_all()
+    read_options.get_all()
     hostname = "wss://api.apparyllis.com/v1/socket"
     payload = json.dumps({"op": "authenticate", "token": readToken})
+    if vrc_loggedin == False:
+        await vrcLogIn()
     await auth(hostname,payload,readToken)
     # use get http request here to get first instance of FronterID here, to update information on VRChat.
     # this variable can then be edited later on.
@@ -499,5 +575,9 @@ def run():
     try:
         loop = asyncio.new_event_loop()
         loop.run_until_complete(main())
-    except:
+    except Exception as e:
         print("Unable to obtain Simply Plural read token from options.json")
+        #print(e)
+
+if __name__ == "__main__":
+    run()
