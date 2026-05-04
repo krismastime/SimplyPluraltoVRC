@@ -1,5 +1,8 @@
 # Simply Plural to VRC
 
+## Deprecated
+This programme is no longer going to be developed as SimplyPlural is shutting down 2026. Please check my [new project](https://github.com/krismastime/VRC-Plural-Chatbox) for future updates. Thank you.
+
 ## 1. Introduction
 This is a standalone programme that takes data from an authorised [SimplyPlural](https://app.apparyllis.com) token, and sends the data to VRChat via the built in OSC api.
 There are also options to update the status of the account.

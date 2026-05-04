@@ -1,8 +1,9 @@
-#SimplyPlural to VRC Library by krismastime Version 1.3.2
+#SimplyPlural to VRC Library by krismastime Version 1.3.3
 import json, asyncio, time, http.client, logging, threading
+from pynput import mouse, keyboard
 from http.cookiejar import Cookie, CookieJar
 from datetime import timedelta, datetime
-from libraries import keyboard, websockets
+from libraries import websockets
 from libraries.pythonosc import udp_client, dispatcher #ADD KEYBIND THINGS THOUGH THIS AND PYNPUT!!!!!
 # dispatcher.map("/avatar/parameters/<command>", func())
 import vrchatapi
@@ -32,6 +33,23 @@ ip = "127.0.0.1"
 port = 9000
 client = udp_client.SimpleUDPClient(ip,port)
 taskcancelled = False
+
+def get_vk(key):
+    return key.vk if hasattr(key, "vk") else key.value.vk
+
+def on_press(key):
+    vk = get_vk(key)
+    new_kb.add(vk)
+
+def on_release():
+    return False
+
+def set_kb():
+    global new_kb
+    new_kb = set()
+    with keyboard.Listener(on_press=on_press,on_release=on_release) as listener:
+        listener.join()
+    return new_kb
 
 def update_avatar(settings):
     try:
@@ -253,6 +271,18 @@ class set_keybinds():
 
     def update_keybinds(settings):
         keybinds = settings["keybinds"]
+        kb_reformat = {}
+        for i in keybinds:
+            kb_reformat[i] = keybinds[i].replace("lctrl","<ctrl_l>").replace("rctrl","<ctrl_r>")
+        with keyboard.GlobalHotKeys({
+            "": set_keybinds.cancel,
+            "": set_keybinds.show_time,
+            "": set_keybinds.time_format,
+            "": set_keybinds.show_chatbox,
+            "": set_keybinds.show_afk,
+            "": manual_update(settings)
+        }) as hotkeys:
+            hotkeys.join()
         keyboard.add_hotkey(keybinds["Close Programme"],set_keybinds.cancel)
         keyboard.add_hotkey(keybinds["Toggle Time"],set_keybinds.show_time)
         keyboard.add_hotkey(keybinds["Time Format"],set_keybinds.time_format)
